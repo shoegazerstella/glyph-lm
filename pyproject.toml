@@ -1,0 +1,12 @@
+[project]
+name = "glyph-lm"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "torch>=2.0",
+    "transformers>=4.40",
+    "tokenizers>=0.19",
+    "datasets>=2.18",
+    "numpy",
+    "jupyter",
+]
