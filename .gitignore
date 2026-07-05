@@ -6,6 +6,8 @@ tokenizers/glyph_bpe/*
 models/model_raw/*
 models/model_glyph/*
 docs/*
+!docs/index.html
+!docs/.nojekyll
 !data/raw/.gitkeep
 !data/glyph/.gitkeep
 !tokenizers/raw_bpe/.gitkeep
