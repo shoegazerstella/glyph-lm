@@ -13,7 +13,12 @@ version.
 At an equal token budget, a model trained on glyph-compressed text achieves a better
 BPE compression ratio and comparable (or better) perplexity and inference
 tokens/second than a model trained on raw text — i.e. deterministic symbolic
-compression is "free" efficiency that a small LLM can still learn from.
+compression is "free" efficiency that a small LLM can still learn from. Framed more
+generally: any gap this experiment finds should tell us whether it's a **fixed
+vocab-budget artifact** (glyph symbols losing out to common English morphemes at a
+given vocab size) **or a structural problem** with word-for-word shorthand
+substitution itself — that distinction is what makes the comparison worth running,
+not just the raw numbers.
 
 ## How to run
 
@@ -68,6 +73,14 @@ the encode → generate → decode wiring works, nothing more.
   phrases into one symbol. Our encoder only does 1-word-to-1-glyph substitution,
   which is why the whitespace-token ratio can't move — adding common bigram/phrase
   rules (e.g. `for the` → one symbol) would actually shrink token counts.
+- **Pre-register glyph symbols as special tokens** instead of leaving them in the
+  general BPE vocab. Right now þ, ŋ, ʃ, etc. have to *earn* a slot through
+  frequency-based merges like any other subword, and lose that competition to
+  common English morphemes — that's the direct cause of the worse compression
+  ratio above. Registering them as guaranteed atomic tokens (like `special_tokens`
+  in `tokenizer.py`) is probably more impactful than the SentencePiece swap below,
+  and conceptually cleaner: it stops the tokenizer from having to "discover" symbols
+  that were deliberately designed to be atomic in the first place.
 - **Try SentencePiece Unigram instead of BPE** — tends to compress slightly better
   than BPE at small vocab sizes, which may help the glyph corpus's novel symbols
   compete better for vocab budget.
