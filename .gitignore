@@ -1,5 +1,6 @@
 data/raw/*
 data/glyph/*
+data/steno_cache/
 tokenizers/raw_bpe/*
 tokenizers/glyph_bpe/*
 models/model_raw/*

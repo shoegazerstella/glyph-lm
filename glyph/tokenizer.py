@@ -7,20 +7,20 @@ from tokenizers.models import BPE
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.trainers import BpeTrainer
 
+from glyph.encoder import get_special_tokens
+
 # GLYPH NOTE: a small vocab_size is intentional — it keeps the model tiny and, more
-# importantly, keeps the comparison fair. The glyph corpus introduces novel symbols
-# (þ, ŋ, ʃ, ...) that must earn their place in a fixed-size vocab alongside ordinary
-# subwords; how well BPE allocates that budget is itself part of what's being tested.
+# importantly, keeps the comparison fair.
 VOCAB_SIZE = 2048
-SPECIAL_TOKENS = ["<pad>", "<bos>", "<eos>", "<unk>"]
+BASE_SPECIAL_TOKENS = ["<pad>", "<bos>", "<eos>", "<unk>"]
 
 
-def train_bpe(corpus_path: str, save_dir: str) -> Tokenizer:
+def train_bpe(corpus_path: str, save_dir: str, special_tokens: list[str] = BASE_SPECIAL_TOKENS) -> Tokenizer:
     tokenizer = Tokenizer(BPE(unk_token="<unk>"))
     tokenizer.pre_tokenizer = Whitespace()
     trainer = BpeTrainer(
         vocab_size=VOCAB_SIZE,
-        special_tokens=SPECIAL_TOKENS,
+        special_tokens=special_tokens,
         min_frequency=2,
     )
     tokenizer.train([corpus_path], trainer)
@@ -45,7 +45,17 @@ def report_stats(tokenizer: Tokenizer, corpus_path: str, label: str) -> None:
 
 if __name__ == "__main__":
     raw_tok = train_bpe("data/raw/train.txt", "tokenizers/raw_bpe")
-    glyph_tok = train_bpe("data/glyph/train.txt", "tokenizers/glyph_bpe")
+    # GLYPH NOTE: registering glyph symbols as trainer special_tokens makes them
+    # guaranteed atomic vocab entries — the tokenizer's added-vocabulary matching
+    # intercepts them before pre-tokenization/merges run, so they no longer have to
+    # *earn* a slot through frequency-based merges, where they previously lost out
+    # to common English morphemes (see the worse compression ratio in README.md's
+    # first-run results).
+    glyph_tok = train_bpe(
+        "data/glyph/train.txt",
+        "tokenizers/glyph_bpe",
+        special_tokens=BASE_SPECIAL_TOKENS + get_special_tokens(),
+    )
 
     report_stats(raw_tok, "data/raw/train.txt", "raw")
     report_stats(glyph_tok, "data/glyph/train.txt", "glyph")
