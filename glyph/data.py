@@ -17,7 +17,11 @@ def load_corpus() -> tuple[str, str]:
     # strictly for eval.py's perplexity computation. This satisfies "don't reuse the
     # same split for training and eval" without a manual re-split that would just
     # shrink the training corpus for no added safety.
-    ds = load_dataset("karpathy/tiny_shakespeare")
+    # GLYPH NOTE: the dataset's original loader is a legacy HF "dataset script",
+    # which recent `datasets` versions refuse to execute. Pinning to the
+    # auto-converted parquet revision gets the identical train/validation/test
+    # splits without needing trust_remote_code.
+    ds = load_dataset("karpathy/tiny_shakespeare", revision="refs/convert/parquet")
     train_text = ds["train"]["text"][0]
     val_text = ds["validation"]["text"][0]
     return train_text, val_text

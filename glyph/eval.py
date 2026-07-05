@@ -1,5 +1,6 @@
 """Compare the raw and glyph models on perplexity, speed, and sample output."""
 
+import json
 import math
 import time
 
@@ -73,7 +74,16 @@ def main() -> None:
         if label == "glyph":
             completions = [decode(c) for c in completions]
 
+        train_metrics_path = f"{model_dir}/train_metrics.json"
+        try:
+            with open(train_metrics_path) as f:
+                train_metrics = json.load(f)
+        except FileNotFoundError:
+            train_metrics = {"final_loss": None, "train_time_seconds": None}
+
         results[label] = {
+            "final_train_loss": train_metrics["final_loss"],
+            "train_time_seconds": train_metrics["train_time_seconds"],
             "perplexity": compute_perplexity(model, tok, val_text, device),
             "tokens_per_second": tokens_per_second(model, tok, prompt, device),
             "avg_tokens_per_line": _avg_tokens_per_line(tok, val_text),
@@ -81,17 +91,28 @@ def main() -> None:
             "completions": completions,
         }
 
+    def _row(label_text: str, key: str, fmt: str = "{:>15.3f}") -> str:
+        raw_val, glyph_val = results["raw"][key], results["glyph"][key]
+        raw_str = fmt.format(raw_val) if raw_val is not None else f"{'n/a':>15}"
+        glyph_str = fmt.format(glyph_val) if glyph_val is not None else f"{'n/a':>15}"
+        return f"{label_text:30}{raw_str}{glyph_str}"
+
     print(f"{'Metric':30}{'raw':>15}{'glyph':>15}")
-    print(f"{'Perplexity (val)':30}{results['raw']['perplexity']:>15.3f}{results['glyph']['perplexity']:>15.3f}")
-    print(f"{'Tokens/sec (inference)':30}{results['raw']['tokens_per_second']:>15.2f}{results['glyph']['tokens_per_second']:>15.2f}")
-    print(f"{'Avg tokens/line (val)':30}{results['raw']['avg_tokens_per_line']:>15.2f}{results['glyph']['avg_tokens_per_line']:>15.2f}")
-    print(f"{'Compression ratio (val)':30}{results['raw']['compression_ratio']:>15.4f}{results['glyph']['compression_ratio']:>15.4f}")
+    print(_row("Final train loss", "final_train_loss"))
+    print(_row("Perplexity (val)", "perplexity"))
+    print(_row("Tokens/sec (inference)", "tokens_per_second", "{:>15.2f}"))
+    print(_row("Avg tokens/line (val)", "avg_tokens_per_line", "{:>15.2f}"))
+    print(_row("Compression ratio (val)", "compression_ratio", "{:>15.4f}"))
 
     for label, _, _ in MODELS:
         print(f"\n--- {label} sample completions ---")
         for c in results[label]["completions"]:
             print(c)
             print("---")
+
+    with open("results.json", "w") as f:
+        json.dump(results, f, indent=2)
+    print("\nSaved results.json")
 
 
 def _avg_tokens_per_line(tok, text: str) -> float:

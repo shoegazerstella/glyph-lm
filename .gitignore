@@ -4,6 +4,7 @@ tokenizers/raw_bpe/*
 tokenizers/glyph_bpe/*
 models/model_raw/*
 models/model_glyph/*
+docs/*
 !data/raw/.gitkeep
 !data/glyph/.gitkeep
 !tokenizers/raw_bpe/.gitkeep
@@ -16,3 +17,4 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .DS_Store
+results.json

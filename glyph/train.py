@@ -1,5 +1,6 @@
 """Tiny GPT-2 training on raw vs glyph corpora (see docs/prd.md)."""
 
+import json
 import os
 import time
 
@@ -88,11 +89,14 @@ def train_model(corpus_path: str, tokenizer_dir: str, out_dir: str, label: str) 
             step += 1
 
     final_loss = loss.item()
-    print(f"[{label}] final_loss={final_loss:.4f} total_time={time.time() - start:.1f}s")
+    total_time = time.time() - start
+    print(f"[{label}] final_loss={final_loss:.4f} total_time={total_time:.1f}s")
 
     os.makedirs(out_dir, exist_ok=True)
     model.save_pretrained(out_dir)
     tok.save_pretrained(out_dir)
+    with open(f"{out_dir}/train_metrics.json", "w") as f:
+        json.dump({"final_loss": final_loss, "train_time_seconds": total_time}, f, indent=2)
     return final_loss
 
 
