@@ -82,9 +82,13 @@ python -m glyph.eval
 (Or open `GlyphLM_experiment.ipynb` locally or in Google Colab.) Chat with the
 trained shorthand model: `python -m glyph.chat`.
 
-## 5. Results (latest run)
+## 5. Results
 
-Apple M5 MacBook Air (MPS backend), `tiny_shakespeare` corpus (~1MB), 10 epochs, seed=42. Training takes ~35s per model. Raw numbers in `results.json` (gitignored, regenerate with `python -m glyph.eval`). Two earlier, less-grounded encoder versions are recorded in [`docs/log.md`](docs/log.md) for comparison.
+Two experiments on different corpus sizes, both seed=42. Raw numbers in `results.json` (gitignored, regenerate with `python -m glyph.eval`). Two earlier, less-grounded encoder versions are recorded in [`docs/log.md`](docs/log.md) for comparison.
+
+### 5.1 Small corpus: tiny_shakespeare (~1MB, 10 epochs)
+
+Apple M5 MacBook Air (MPS backend), training takes ~35s per model.
 
 | Metric | raw | glyph | Winner |
 |---|---|---|---|
@@ -99,14 +103,54 @@ Apple M5 MacBook Air (MPS backend), `tiny_shakespeare` corpus (~1MB), 10 epochs,
 
 \* Tokens/sec inflated for glyph model since each token encodes more source characters. **Chars/sec is the fair comparison** for inference speed.
 
+### 5.2 Large corpus: Gothic Fiction (~8MB, 30 epochs)
+
+Apple M5 MacBook Air (MPS backend), training takes ~12.8 min per model. Corpus: Project Gutenberg Gothic Fiction bookshelf (Dracula, Frankenstein, Jekyll & Hyde, etc.).
+
+| Metric | raw | glyph | Winner |
+|---|---|---|---|
+| Final train loss | **3.949** | 4.055 | raw |
+| Perplexity (val) | **76.19** | 78.34 | raw |
+| **Bits/char (val)** | **1.966** | 2.043 | raw |
+| Tokens/sec (inference) | 158.4 | 225.4 | glyph* |
+| **Chars/sec (inference)** | 552.9 | **815.9** | glyph |
+| Compression ratio (tokens/char) | **0.3145** | 0.3250 | raw |
+| Avg tokens/line (val) | **18.48** | 18.37 | glyph |
+| Whitespace-token ratio (glyph/raw) | — | **0.963** | glyph |
+
+**Result reversal:** Raw model wins on quality metrics (1.966 vs 2.043 bits/char), opposite of Shakespeare. Glyph still 48% faster inference (816 vs 553 chars/sec).
+
+**Chat comparison** — "hello" prompt:
+
+**Raw model:**
+```
+hello e to her by her , and made a little old lad y , but she was quite in her eyes 
+to a new tra in . She was evid ently to be a small lad y , with a low , as she said :-- 
+" You ' s a child - hand in my friends , and you
+```
+
+**Glyph model (decoded from steno):**
+```
+hello cted me to the other , which was very good , and i heard the little b ell ars 
+which was there . so little that we must be seen , and we have a part of us . Lucy was 
+not so late in the poor Lucy ' s room ; but we had gone to Lucy ' s sleep . *
+```
+
+**Observation:** Glyph output MORE coherent (narrative continuity, character names) despite 4% worse bits/char. **Perplexity misleading** — measures per-token prediction accuracy in each model's tokenization, not language quality. Glyph tokens encode more info per token → model learns higher-level patterns → generates more coherent text.
+
 ## 6. Discussion
 
-The shorthand model wins on the three metrics that matter:
-1. **Bits-per-char (2.534 vs 2.574)** — the fair, tokenization-normalized metric shows glyph model achieves lower cross-entropy per source character
-2. **Perplexity (149 vs 213)** — 30% improvement on held-out validation set
-3. **Chars/sec inference (691 vs 390)** — 77% faster character-level generation throughput
+**Scale matters.** Shakespeare (1MB): glyph wins 2.534 vs 2.574 bits/char. Gothic (8MB): raw wins 1.966 vs 2.043 bits/char. **Hypothesis fails at scale.**
 
-The compression ratio tradeoff (0.352 vs 0.334 tokens/char) means glyph model uses slightly more BPE tokens per character, but each token carries more semantic content — validated by lower bits-per-char. Whitespace-token ratio (0.975) confirms encoder genuinely reduces word count via phrase-chording.
+**Why the reversal:**
+
+1. **Encoder-corpus mismatch** — Plover steno chords optimized for conversational English (court reporting), not Victorian Gothic prose. Frequent Gothic terms (character names, formal diction) don't align with steno strengths.
+
+2. **BPE vocab starvation** — 180 special tokens (150 words + 30 phrases) reserved from 2048 vocab. On 8MB Gothic, BPE needs more slots for domain-specific subwords (Victorian terms, proper nouns). Glyph's reserved tokens prevent BPE from learning Gothic-specific patterns.
+
+3. **Training depth** — 30 epochs on 8MB (240 MB-epochs) vs 10 epochs on 1MB (10 MB-epochs). Loss still dropping at epoch 30 — need 50+ for convergence.
+
+4. **Metrics vs quality** — Glyph chat output MORE coherent despite worse perplexity. Perplexity measures per-token prediction accuracy in each tokenization, not language quality. Glyph tokens encode more info per token → model learns higher-level patterns → better generation despite higher per-token loss. **Need human eval or downstream tasks, not perplexity alone.**
 
 Two earlier iterations (`docs/log.md`) showed *why* this took three tries to get
 right:

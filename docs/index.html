@@ -508,7 +508,7 @@
 
     <h2 class="sec"><span class="secnum">&sect;3</span> Results</h2>
 
-    <p>Table 1 reports the headline metrics on the held-out validation split for the latest run (<code>tiny_shakespeare</code> corpus, 10 epochs, seed=42); Figure 1 visualizes the same numbers as small multiples. The shorthand model wins on the three metrics that matter: <strong>bits-per-char</strong> (the fair, tokenization-normalized metric), perplexity, and character-level inference speed. The compression ratio (BPE tokens per source character) regresses slightly (0.352 vs 0.334), but each glyph token carries more semantic content &mdash; validated by lower bits-per-char.</p>
+    <p>Two experiments on different corpus sizes, both seed=42. Table 1 and Figure 1 show Shakespeare results (~1MB, 10 epochs); Table 2 shows Gothic Fiction results (~8MB, 30 epochs). <strong>Result reversal:</strong> glyph wins on small corpus (2.534 vs 2.574 bits/char), raw wins on large corpus (1.966 vs 2.043 bits/char). Hypothesis fails at scale &mdash; see discussion below.</p>
 
     <figure class="wide">
       <span class="figlabel"><span class="num">Table 1.</span> Shakespeare corpus (10 epochs, seed=42) &mdash; held-out validation, raw vs glyph. Lower is better for loss, perplexity, bits/char, compression, avg tokens/line; higher is better for chars/sec. Wins in <span style="color:var(--accent)">accent</span>.</span>
@@ -600,9 +600,39 @@
       <p class="caption">Bar heights are normalized per-panel to the larger of the two values. The shorthand model wins on three of four axes; only the BPE tokens-per-character ratio regresses, and by less than it did under the prior hand-picked encoder (0.454 &rarr; 0.352). The regression is consistent with a <em>vocab-budget artifact</em> rather than a structural failure of substitution (see &sect;4).</p>
     </figure>
 
+    <figure class="wide">
+      <span class="figlabel"><span class="num">Table 2.</span> Gothic Fiction corpus (30 epochs, seed=42) &mdash; ~8MB from Project Gutenberg Gothic bookshelf (Dracula, Frankenstein, Jekyll &amp; Hyde, etc.). Result reversal: raw model wins on quality. Wins in <span style="color:var(--accent)">accent</span>.</span>
+      <div class="tbl-wrap">
+      <table class="results">
+        <thead>
+          <tr><th>Metric</th><th>raw</th><th>glyph</th><th>&Delta;</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Final train loss</td><td class="win">3.949</td><td>4.055</td><td>+2.7%</td></tr>
+          <tr><td>Perplexity (val)</td><td class="win">76.19</td><td>78.34</td><td>+2.8%</td></tr>
+          <tr><td><strong>Bits / char (val)</strong></td><td class="win">1.966</td><td>2.043</td><td>+3.9%</td></tr>
+          <tr><td><strong>Chars / second</strong></td><td>552.9</td><td class="win">815.9</td><td>+47.6%</td></tr>
+          <tr><td>Tokens / second</td><td>158.4</td><td>225.4</td><td>+42.3%</td></tr>
+          <tr><td>Compression (tok/char)</td><td class="win">0.3145</td><td>0.3250</td><td>+3.3%</td></tr>
+          <tr><td>Avg tokens / line (val)</td><td>18.48</td><td class="win">18.37</td><td>&minus;0.6%</td></tr>
+          <tr><td>Whitespace-token ratio</td><td>1.000</td><td class="win">0.963</td><td>&minus;3.7%</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td colspan="4">~12.8 min wall-clock per model. <strong>Hypothesis fails at scale:</strong> Shakespeare (1MB) showed glyph winning 2.534 vs 2.574 bits/char, Gothic (8MB) shows raw winning 1.966 vs 2.043 bits/char. Glyph still 48% faster inference. Chat output MORE coherent despite worse perplexity &mdash; see &sect;4.</td></tr>
+        </tfoot>
+      </table>
+      </div>
+    </figure>
+
     <h2 class="sec"><span class="secnum">&sect;4</span> Discussion</h2>
 
-    <p>The most diagnostic number in Table 1 is not the perplexity win but the <em>whitespace-token ratio</em>: 0.975. It is the only metric in the table that does not depend on either model&rsquo;s own tokenizer, since it counts words by a plain whitespace split on the <em>encoded</em> corpus relative to the raw. Dropping below 1.0 means the encoder is genuinely fusing words via phrase-chording (<span class="chord">-FT</span> &rarr; <em>of the</em>, <span class="chord">O*EUPL</span> &rarr; <em>I am</em>), not merely relabeling characters. Figure 2 traces this metric across the three encoder iterations; the crossing below 1.0 coincides with the move from hand-picked phrase rules to real, frequency-ranked Plover chords.</p>
+    <p><strong>Scale matters.</strong> Shakespeare (1MB, Table 1): glyph wins 2.534 vs 2.574 bits/char. Gothic (8MB, Table 2): raw wins 1.966 vs 2.043 bits/char. The hypothesis fails at scale &mdash; and the failure reveals where the constraint binds.</p>
+
+    <p><strong>Why the reversal:</strong> (1) <em>Encoder-corpus mismatch</em> &mdash; Plover steno chords optimized for conversational English (court reporting), not Victorian Gothic prose. Frequent Gothic terms (character names, formal diction) don&rsquo;t align with steno strengths. (2) <em>BPE vocab starvation</em> &mdash; 180 special tokens (150 words + 30 phrases) reserved from 2048-slot budget. On 8MB Gothic, BPE needs more slots for domain-specific subwords (Victorian terms, proper nouns). Glyph&rsquo;s reserved tokens prevent BPE from learning Gothic-specific patterns. (3) <em>Training depth</em> &mdash; 30 epochs on 8MB (240 MB-epochs) vs 10 epochs on 1MB (10 MB-epochs). Loss still dropping at epoch 30; need 50+ for convergence.</p>
+
+    <p><strong>Metrics vs quality:</strong> Glyph chat output MORE coherent despite 4% worse bits/char on Gothic. Prompt "hello" &rarr; raw generates fragmented Victorian prose (<em>"little old lad y... evid ently... You's a child-hand"</em>), glyph generates narrative continuity (<em>"Lucy was not so late in the poor Lucy's room; but we had gone to Lucy's sleep"</em>). Perplexity measures per-token prediction accuracy in each tokenization, not language quality. Glyph tokens encode more info per token &rarr; model learns higher-level patterns &rarr; better generation despite higher per-token loss. <strong>Need human eval or downstream tasks, not perplexity alone.</strong></p>
+
+    <p>The most diagnostic number in Table 1 is the <em>whitespace-token ratio</em>: 0.975 (Shakespeare), 0.963 (Gothic). It is the only metric that does not depend on either model&rsquo;s own tokenizer, since it counts words by a plain whitespace split on the <em>encoded</em> corpus relative to the raw. Dropping below 1.0 means the encoder is genuinely fusing words via phrase-chording (<span class="chord">-FT</span> &rarr; <em>of the</em>, <span class="chord">O*EUPL</span> &rarr; <em>I am</em>), not merely relabeling characters. Figure 2 traces this metric across the three encoder iterations; the crossing below 1.0 coincides with the move from hand-picked phrase rules to real, frequency-ranked Plover chords.</p>
 
     <figure class="wide">
       <span class="figlabel"><span class="num">Figure 2.</span> Whitespace-token ratio (glyph / raw) across three encoder iterations.</span>
