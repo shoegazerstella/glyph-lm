@@ -4,3 +4,4 @@ tokenizers>=0.19
 datasets>=2.18
 numpy
 jupyter
+requests

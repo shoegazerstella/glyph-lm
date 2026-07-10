@@ -21,3 +21,5 @@ __pycache__/
 .ipynb_checkpoints/
 .DS_Store
 results.json
+results_aggregate.json
+results_archive/

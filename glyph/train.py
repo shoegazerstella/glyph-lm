@@ -2,17 +2,28 @@
 
 import json
 import os
+import random
 import time
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import GPT2Config, GPT2LMHeadModel, PreTrainedTokenizerFast
 
 BLOCK_SIZE = 256
 BATCH_SIZE = 32
-EPOCHS = 3
+EPOCHS = 30
 LR = 3e-4
 LOG_EVERY = 100
+
+
+def set_seed(seed: int) -> None:
+    """Set random seeds for reproducibility."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 def get_device() -> torch.device:
@@ -42,7 +53,8 @@ class BlockDataset(Dataset):
         return x, x.clone()
 
 
-def train_model(corpus_path: str, tokenizer_dir: str, out_dir: str, label: str) -> float:
+def train_model(corpus_path: str, tokenizer_dir: str, out_dir: str, label: str, seed: int = 42) -> float:
+    set_seed(seed)
     device = get_device()
     tok = PreTrainedTokenizerFast(
         tokenizer_file=f"{tokenizer_dir}/tokenizer.json", pad_token="<pad>"
@@ -52,7 +64,10 @@ def train_model(corpus_path: str, tokenizer_dir: str, out_dir: str, label: str) 
         ids = tok.encode(f.read())
 
     dataset = BlockDataset(ids)
-    loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
+    # Explicit generator for reproducible shuffling across platforms
+    g = torch.Generator()
+    g.manual_seed(seed)
+    loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, generator=g)
 
     # GLYPH NOTE: use the tokenizer's actual trained vocab size (may be < 2048)
     # rather than hardcoding it, to avoid an embedding/vocab size mismatch.
@@ -96,10 +111,13 @@ def train_model(corpus_path: str, tokenizer_dir: str, out_dir: str, label: str) 
     model.save_pretrained(out_dir)
     tok.save_pretrained(out_dir)
     with open(f"{out_dir}/train_metrics.json", "w") as f:
-        json.dump({"final_loss": final_loss, "train_time_seconds": total_time}, f, indent=2)
+        json.dump({"final_loss": final_loss, "train_time_seconds": total_time, "seed": seed}, f, indent=2)
     return final_loss
 
 
 if __name__ == "__main__":
-    train_model("data/raw/train.txt", "tokenizers/raw_bpe", "models/model_raw", "raw")
-    train_model("data/glyph/train.txt", "tokenizers/glyph_bpe", "models/model_glyph", "glyph")
+    import sys
+    seed = int(sys.argv[1]) if len(sys.argv) > 1 else 42
+    print(f"Training with seed={seed}")
+    train_model("data/raw/train.txt", "tokenizers/raw_bpe", "models/model_raw", "raw", seed=seed)
+    train_model("data/glyph/train.txt", "tokenizers/glyph_bpe", "models/model_glyph", "glyph", seed=seed)
