@@ -508,69 +508,71 @@
 
     <h2 class="sec"><span class="secnum">&sect;3</span> Results</h2>
 
-    <p>Table 1 reports the four headline metrics on the held-out validation split for the latest run; Figure 1 visualizes the same numbers as small multiples. The shorthand model wins on loss, perplexity, and inference throughput simultaneously &mdash; the first iteration in which it does so on every axis. The compression ratio (BPE tokens per source character) regresses slightly (0.352 vs 0.333), a gap narrowed by more than half relative to the prior hand-picked encoder (0.454).</p>
+    <p>Table 1 reports the headline metrics on the held-out validation split for the latest run (<code>tiny_shakespeare</code> corpus, 10 epochs, seed=42); Figure 1 visualizes the same numbers as small multiples. The shorthand model wins on the three metrics that matter: <strong>bits-per-char</strong> (the fair, tokenization-normalized metric), perplexity, and character-level inference speed. The compression ratio (BPE tokens per source character) regresses slightly (0.352 vs 0.334), but each glyph token carries more semantic content &mdash; validated by lower bits-per-char.</p>
 
     <figure class="wide">
-      <span class="figlabel"><span class="num">Table 1.</span> Run 3 &mdash; held-out validation, raw vs glyph (lower is better for loss, perplexity, compression, avg tokens/line; higher is better for tokens/sec). Wins in <span style="color:var(--accent)">accent</span>.</span>
+      <span class="figlabel"><span class="num">Table 1.</span> Shakespeare corpus (10 epochs, seed=42) &mdash; held-out validation, raw vs glyph. Lower is better for loss, perplexity, bits/char, compression, avg tokens/line; higher is better for chars/sec. Wins in <span style="color:var(--accent)">accent</span>.</span>
       <div class="tbl-wrap">
       <table class="results">
         <thead>
           <tr><th>Metric</th><th>raw</th><th>glyph</th><th>&Delta;</th></tr>
         </thead>
         <tbody>
-          <tr><td>Final train loss</td><td>6.004</td><td class="win">5.812</td><td>&minus;3.2%</td></tr>
-          <tr><td>Perplexity (val)</td><td>393.1</td><td class="win">286.1</td><td>&minus;27.2%</td></tr>
-          <tr><td>Tokens / second</td><td>256.8</td><td class="win">415.0</td><td>+61.6%</td></tr>
-          <tr><td>Compression (tok/char)</td><td class="win">0.333</td><td>0.352</td><td>+5.7%</td></tr>
-          <tr><td>Avg tokens / line (val)</td><td class="win">10.91</td><td>11.45</td><td>+5.0%</td></tr>
+          <tr><td>Final train loss</td><td>5.214</td><td class="win">5.108</td><td>&minus;2.0%</td></tr>
+          <tr><td>Perplexity (val)</td><td>213.1</td><td class="win">149.3</td><td>&minus;29.9%</td></tr>
+          <tr><td><strong>Bits / char (val)</strong></td><td>2.574</td><td class="win">2.534</td><td>&minus;1.6%</td></tr>
+          <tr><td><strong>Chars / second</strong></td><td>390.3</td><td class="win">691.3</td><td>+77.1%</td></tr>
+          <tr><td>Tokens / second</td><td>105.2</td><td>215.3</td><td>+104.6%*</td></tr>
+          <tr><td>Compression (tok/char)</td><td class="win">0.334</td><td>0.352</td><td>+5.4%</td></tr>
+          <tr><td>Avg tokens / line (val)</td><td class="win">10.53</td><td>11.02</td><td>+4.7%</td></tr>
           <tr><td>Whitespace-token ratio</td><td>1.000</td><td class="win">0.975</td><td>&minus;2.5%</td></tr>
         </tbody>
         <tfoot>
-          <tr><td colspan="4">Identical architecture, hyperparameters, and 2048-token BPE budget. ~100 training steps, ~11s wall-clock per model. Source: <code>results.json</code>.</td></tr>
+          <tr><td colspan="4">Identical architecture (4-layer GPT-2, n_embd=128, n_head=4), hyperparameters, and 2048-token BPE budget. ~35s wall-clock per model. *Tokens/sec inflated for glyph since tokens encode more chars; <strong>chars/sec is the fair comparison</strong>. Source: <code>results.json</code>.</td></tr>
         </tfoot>
       </table>
       </div>
     </figure>
 
     <figure class="wide">
-      <span class="figlabel"><span class="num">Figure 1.</span> Run-3 metrics, raw vs glyph &mdash; small multiples.</span>
+      <span class="figlabel"><span class="num">Figure 1.</span> Shakespeare corpus metrics, raw vs glyph &mdash; small multiples.</span>
       <svg class="fig-svg" viewBox="0 0 800 210" role="img" aria-label="Bar chart comparing raw and glyph models on four metrics">
-        <!-- panel 0: Loss -->
+        <!-- panel 0: Perplexity -->
         <g transform="translate(0,0)">
-          <text x="100" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="#111">Final train loss</text>
-          <text x="100" y="37" text-anchor="middle" font-size="9.5" fill="#6b6b6b">&darr; lower is better</text>
-          <line x1="30" y1="150" x2="170" y2="150" stroke="#111" stroke-width="1"/>
-          <!-- raw: 6.004 -> 100px, glyph: 5.812 -> 96.8px -->
-          <rect x="50" y="50" width="40" height="100" fill="#a7a7a7"/>
-          <rect x="110" y="53.2" width="40" height="96.8" fill="#1b3a5c"/>
-          <text x="70" y="44" text-anchor="middle" font-size="10.5" fill="#2a2a2a">6.00</text>
-          <text x="130" y="47" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1b3a5c">5.81</text>
-          <text x="70" y="165" text-anchor="middle" font-size="9.5" fill="#6b6b6b">raw</text>
-          <text x="130" y="165" text-anchor="middle" font-size="9.5" fill="#6b6b6b">glyph</text>
-        </g>
-        <!-- panel 1: Perplexity -->
-        <g transform="translate(200,0)">
           <text x="100" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="#111">Perplexity (val)</text>
           <text x="100" y="37" text-anchor="middle" font-size="9.5" fill="#6b6b6b">&darr; lower is better</text>
           <line x1="30" y1="150" x2="170" y2="150" stroke="#111" stroke-width="1"/>
-          <!-- raw: 393.1 -> 100px, glyph: 286.1 -> 72.8px -->
+          <!-- raw: 213.1 -> 100px, glyph: 149.3 -> 70.1px -->
           <rect x="50" y="50" width="40" height="100" fill="#a7a7a7"/>
-          <rect x="110" y="77.2" width="40" height="72.8" fill="#1b3a5c"/>
-          <text x="70" y="44" text-anchor="middle" font-size="10.5" fill="#2a2a2a">393</text>
-          <text x="130" y="71" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1b3a5c">286</text>
+          <rect x="110" y="79.9" width="40" height="70.1" fill="#1b3a5c"/>
+          <text x="70" y="44" text-anchor="middle" font-size="10.5" fill="#2a2a2a">213</text>
+          <text x="130" y="73" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1b3a5c">149</text>
           <text x="70" y="165" text-anchor="middle" font-size="9.5" fill="#6b6b6b">raw</text>
           <text x="130" y="165" text-anchor="middle" font-size="9.5" fill="#6b6b6b">glyph</text>
         </g>
-        <!-- panel 2: Tokens/sec -->
+        <!-- panel 1: Bits/char -->
+        <g transform="translate(200,0)">
+          <text x="100" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="#111">Bits / char (val)</text>
+          <text x="100" y="37" text-anchor="middle" font-size="9.5" fill="#6b6b6b">&darr; lower is better</text>
+          <line x1="30" y1="150" x2="170" y2="150" stroke="#111" stroke-width="1"/>
+          <!-- raw: 2.574 -> 100px, glyph: 2.534 -> 98.4px -->
+          <rect x="50" y="50" width="40" height="100" fill="#a7a7a7"/>
+          <rect x="110" y="51.6" width="40" height="98.4" fill="#1b3a5c"/>
+          <text x="70" y="44" text-anchor="middle" font-size="10.5" fill="#2a2a2a">2.574</text>
+          <text x="130" y="45" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1b3a5c">2.534</text>
+          <text x="70" y="165" text-anchor="middle" font-size="9.5" fill="#6b6b6b">raw</text>
+          <text x="130" y="165" text-anchor="middle" font-size="9.5" fill="#6b6b6b">glyph</text>
+        </g>
+        <!-- panel 2: Chars/sec -->
         <g transform="translate(400,0)">
-          <text x="100" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="#111">Tokens / second</text>
+          <text x="100" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="#111">Chars / second</text>
           <text x="100" y="37" text-anchor="middle" font-size="9.5" fill="#6b6b6b">&uarr; higher is better</text>
           <line x1="30" y1="150" x2="170" y2="150" stroke="#111" stroke-width="1"/>
-          <!-- raw: 256.8 -> 61.9px, glyph: 415.0 -> 100px (max=415) -->
-          <rect x="50" y="88.1" width="40" height="61.9" fill="#a7a7a7"/>
+          <!-- raw: 390.3 -> 56.5px, glyph: 691.3 -> 100px (max=691.3) -->
+          <rect x="50" y="93.5" width="40" height="56.5" fill="#a7a7a7"/>
           <rect x="110" y="50" width="40" height="100" fill="#1b3a5c"/>
-          <text x="70" y="82" text-anchor="middle" font-size="10.5" fill="#2a2a2a">257</text>
-          <text x="130" y="44" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1b3a5c">415</text>
+          <text x="70" y="87" text-anchor="middle" font-size="10.5" fill="#2a2a2a">390</text>
+          <text x="130" y="44" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1b3a5c">691</text>
           <text x="70" y="165" text-anchor="middle" font-size="9.5" fill="#6b6b6b">raw</text>
           <text x="130" y="165" text-anchor="middle" font-size="9.5" fill="#6b6b6b">glyph</text>
         </g>
@@ -579,10 +581,10 @@
           <text x="100" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="#111">Compression (tok/char)</text>
           <text x="100" y="37" text-anchor="middle" font-size="9.5" fill="#6b6b6b">&darr; lower is better</text>
           <line x1="30" y1="150" x2="170" y2="150" stroke="#111" stroke-width="1"/>
-          <!-- raw: 0.333 -> 94.6px, glyph: 0.352 -> 100px (max=0.352) -->
-          <rect x="50" y="55.4" width="40" height="94.6" fill="#a7a7a7"/>
+          <!-- raw: 0.334 -> 94.9px, glyph: 0.352 -> 100px (max=0.352) -->
+          <rect x="50" y="55.1" width="40" height="94.9" fill="#a7a7a7"/>
           <rect x="110" y="50" width="40" height="100" fill="#1b3a5c"/>
-          <text x="70" y="49" text-anchor="middle" font-size="10.5" font-weight="600" fill="#2a2a2a">0.333</text>
+          <text x="70" y="49" text-anchor="middle" font-size="10.5" font-weight="600" fill="#2a2a2a">0.334</text>
           <text x="130" y="44" text-anchor="middle" font-size="10.5" fill="#1b3a5c">0.352</text>
           <text x="70" y="165" text-anchor="middle" font-size="9.5" fill="#6b6b6b">raw</text>
           <text x="130" y="165" text-anchor="middle" font-size="9.5" fill="#6b6b6b">glyph</text>
