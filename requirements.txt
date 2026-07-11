@@ -2,6 +2,7 @@ torch>=2.0
 transformers>=4.40
 tokenizers>=0.19
 datasets>=2.18
+sentencepiece>=0.1.99
 numpy
 jupyter
 requests
