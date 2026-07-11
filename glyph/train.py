@@ -11,9 +11,11 @@ from torch.utils.data import DataLoader, Dataset
 from transformers import GPT2Config, GPT2LMHeadModel, LlamaConfig, LlamaForCausalLM, PreTrainedTokenizerFast
 
 BLOCK_SIZE = 256
-BATCH_SIZE = 32
-EPOCHS = 30
-LR = 3e-4
+BATCH_SIZE = 16  # reduced for gradient accumulation
+GRAD_ACCUM_STEPS = 2  # effective batch = 32
+EPOCHS = 50
+LR = 5e-4
+WARMUP_STEPS = 100
 LOG_EVERY = 100
 ARCHITECTURE = "llama"  # "gpt2" or "llama"
 
@@ -76,10 +78,10 @@ def train_model(corpus_path: str, tokenizer_dir: str, out_dir: str, label: str, 
         config = LlamaConfig(
             vocab_size=tok.vocab_size,
             max_position_embeddings=BLOCK_SIZE,
-            hidden_size=128,
-            num_hidden_layers=4,
-            num_attention_heads=4,
-            intermediate_size=512,  # 4x hidden_size for SwiGLU
+            hidden_size=256,  # increased from 128
+            num_hidden_layers=6,  # increased from 4
+            num_attention_heads=8,  # increased from 4
+            intermediate_size=1024,  # 4x hidden_size for SwiGLU
             rms_norm_eps=1e-5,
         )
         model = LlamaForCausalLM(config).to(device)
@@ -87,34 +89,48 @@ def train_model(corpus_path: str, tokenizer_dir: str, out_dir: str, label: str, 
         config = GPT2Config(
             vocab_size=tok.vocab_size,
             n_positions=BLOCK_SIZE,
-            n_embd=128,
-            n_layer=4,
-            n_head=4,
+            n_embd=256,
+            n_layer=6,
+            n_head=8,
         )
         model = GPT2LMHeadModel(config).to(device)
-    optim = torch.optim.AdamW(model.parameters(), lr=LR)
+
+    optim = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=0.01)
+
+    # Cosine decay with warmup
+    from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
+    total_steps = len(loader) * EPOCHS
+    warmup_scheduler = LinearLR(optim, start_factor=0.1, end_factor=1.0, total_iters=WARMUP_STEPS)
+    cosine_scheduler = CosineAnnealingLR(optim, T_max=total_steps - WARMUP_STEPS, eta_min=LR * 0.1)
+    scheduler = SequentialLR(optim, [warmup_scheduler, cosine_scheduler], milestones=[WARMUP_STEPS])
 
     model.train()
     step = 0
     start = time.time()
     loss = torch.tensor(0.0)
+    optim.zero_grad()
+
     for epoch in range(EPOCHS):
-        for x, y in loader:
+        for batch_idx, (x, y) in enumerate(loader):
             x, y = x.to(device), y.to(device)
             out = model(input_ids=x, labels=y)
-            loss = out.loss
-
-            optim.zero_grad()
+            loss = out.loss / GRAD_ACCUM_STEPS  # scale loss for gradient accumulation
             loss.backward()
-            optim.step()
 
-            if step % LOG_EVERY == 0:
-                elapsed = time.time() - start
-                print(
-                    f"[{label}] epoch={epoch} step={step} "
-                    f"loss={loss.item():.4f} elapsed={elapsed:.1f}s"
-                )
-            step += 1
+            # Only step optimizer every GRAD_ACCUM_STEPS batches
+            if (batch_idx + 1) % GRAD_ACCUM_STEPS == 0:
+                optim.step()
+                scheduler.step()
+                optim.zero_grad()
+
+                if step % LOG_EVERY == 0:
+                    elapsed = time.time() - start
+                    current_lr = scheduler.get_last_lr()[0]
+                    print(
+                        f"[{label}] epoch={epoch} step={step} "
+                        f"loss={loss.item() * GRAD_ACCUM_STEPS:.4f} lr={current_lr:.2e} elapsed={elapsed:.1f}s"
+                    )
+                step += 1
 
     final_loss = loss.item()
     total_time = time.time() - start

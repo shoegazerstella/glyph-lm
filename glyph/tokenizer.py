@@ -9,9 +9,8 @@ from tokenizers.trainers import BpeTrainer
 
 from glyph.encoder import get_special_tokens
 
-# GLYPH NOTE: a small vocab_size is intentional — it keeps the model tiny and, more
-# importantly, keeps the comparison fair.
-VOCAB_SIZE = 2048
+# GLYPH NOTE: increased from 2048 to 4096 to reduce BPE vocab starvation on larger corpus
+VOCAB_SIZE = 4096
 BASE_SPECIAL_TOKENS = ["<pad>", "<bos>", "<eos>", "<unk>"]
 
 

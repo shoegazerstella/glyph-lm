@@ -2,10 +2,11 @@
 
 import json
 import math
+import os
 import time
 
 import torch
-from transformers import GPT2LMHeadModel, PreTrainedTokenizerFast
+from transformers import AutoModelForCausalLM, PreTrainedTokenizerFast
 
 from glyph.encoder import decode, encode
 from glyph.train import BLOCK_SIZE, get_device
@@ -89,7 +90,8 @@ def main() -> None:
         tok = PreTrainedTokenizerFast(
             tokenizer_file=f"{model_dir}/tokenizer.json", pad_token="<pad>"
         )
-        model = GPT2LMHeadModel.from_pretrained(model_dir).to(device)
+        # Auto-detect architecture from config
+        model = AutoModelForCausalLM.from_pretrained(model_dir).to(device)
 
         with open(val_path) as f:
             val_text = f.read()

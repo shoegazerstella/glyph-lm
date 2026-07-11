@@ -8,7 +8,7 @@ Usage: python -m glyph.chat_glyph
 """
 
 import torch
-from transformers import GPT2LMHeadModel, PreTrainedTokenizerFast
+from transformers import AutoModelForCausalLM, PreTrainedTokenizerFast
 
 from glyph.encoder import decode, encode
 from glyph.train import get_device
@@ -19,7 +19,7 @@ MODEL_DIR = "models/model_glyph"
 def main() -> None:
     device = get_device()
     tok = PreTrainedTokenizerFast(tokenizer_file=f"{MODEL_DIR}/tokenizer.json", pad_token="<pad>")
-    model = GPT2LMHeadModel.from_pretrained(MODEL_DIR).to(device)
+    model = AutoModelForCausalLM.from_pretrained(MODEL_DIR).to(device)
     model.eval()
 
     print("GlyphLM chat — type in plain English, Ctrl+C to quit.")
