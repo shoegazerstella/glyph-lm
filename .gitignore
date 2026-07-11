@@ -11,6 +11,7 @@ docs/*
 !docs/log.md
 !docs/prd.md
 !docs/specs/
+!docs/plans/
 !data/raw/.gitkeep
 !data/glyph/.gitkeep
 !tokenizers/raw_bpe/.gitkeep
