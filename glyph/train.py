@@ -13,7 +13,7 @@ from transformers import GPT2Config, GPT2LMHeadModel, LlamaConfig, LlamaForCausa
 BLOCK_SIZE = 256
 BATCH_SIZE = 16  # reduced for gradient accumulation
 GRAD_ACCUM_STEPS = 2  # effective batch = 32
-EPOCHS = 50
+EPOCHS = 12
 LR = 5e-4
 WARMUP_STEPS = 100
 LOG_EVERY = 100
@@ -78,10 +78,10 @@ def train_model(corpus_path: str, tokenizer_dir: str, out_dir: str, label: str, 
         config = LlamaConfig(
             vocab_size=tok.vocab_size,
             max_position_embeddings=BLOCK_SIZE,
-            hidden_size=256,  # increased from 128
-            num_hidden_layers=6,  # increased from 4
-            num_attention_heads=8,  # increased from 4
-            intermediate_size=1024,  # 4x hidden_size for SwiGLU
+            hidden_size=512,  # proper small config (upgraded from 256)
+            num_hidden_layers=8,  # proper small config (upgraded from 6)
+            num_attention_heads=8,  # unchanged
+            intermediate_size=2048,  # 4x hidden_size for SwiGLU (upgraded from 1024)
             rms_norm_eps=1e-5,
         )
         model = LlamaForCausalLM(config).to(device)
