@@ -8,13 +8,14 @@ import time
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
-from transformers import GPT2Config, GPT2LMHeadModel, PreTrainedTokenizerFast
+from transformers import GPT2Config, GPT2LMHeadModel, LlamaConfig, LlamaForCausalLM, PreTrainedTokenizerFast
 
 BLOCK_SIZE = 256
 BATCH_SIZE = 32
 EPOCHS = 30
 LR = 3e-4
 LOG_EVERY = 100
+ARCHITECTURE = "llama"  # "gpt2" or "llama"
 
 
 def set_seed(seed: int) -> None:
@@ -71,14 +72,26 @@ def train_model(corpus_path: str, tokenizer_dir: str, out_dir: str, label: str, 
 
     # GLYPH NOTE: use the tokenizer's actual trained vocab size (may be < 2048)
     # rather than hardcoding it, to avoid an embedding/vocab size mismatch.
-    config = GPT2Config(
-        vocab_size=tok.vocab_size,
-        n_positions=BLOCK_SIZE,
-        n_embd=128,
-        n_layer=4,
-        n_head=4,
-    )
-    model = GPT2LMHeadModel(config).to(device)
+    if ARCHITECTURE == "llama":
+        config = LlamaConfig(
+            vocab_size=tok.vocab_size,
+            max_position_embeddings=BLOCK_SIZE,
+            hidden_size=128,
+            num_hidden_layers=4,
+            num_attention_heads=4,
+            intermediate_size=512,  # 4x hidden_size for SwiGLU
+            rms_norm_eps=1e-5,
+        )
+        model = LlamaForCausalLM(config).to(device)
+    else:  # gpt2
+        config = GPT2Config(
+            vocab_size=tok.vocab_size,
+            n_positions=BLOCK_SIZE,
+            n_embd=128,
+            n_layer=4,
+            n_head=4,
+        )
+        model = GPT2LMHeadModel(config).to(device)
     optim = torch.optim.AdamW(model.parameters(), lr=LR)
 
     model.train()

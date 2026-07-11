@@ -1,8 +1,10 @@
-"""Interactive REPL: talk to the glyph model in plain English.
+"""Interactive REPL for glyph model.
 
 Your input is shorthand-encoded before being fed to the model (since that's the
 only "language" model_glyph was trained on), and the model's shorthand output is
 decoded back to natural language before being printed.
+
+Usage: python -m glyph.chat_glyph
 """
 
 import torch

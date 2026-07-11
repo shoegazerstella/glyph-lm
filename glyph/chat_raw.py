@@ -1,4 +1,7 @@
-"""Interactive REPL for raw model (no encoding/decoding)."""
+"""Interactive REPL for raw model (no encoding/decoding).
+
+Usage: python -m glyph.chat_raw
+"""
 
 import torch
 from transformers import GPT2LMHeadModel, PreTrainedTokenizerFast

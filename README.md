@@ -80,7 +80,7 @@ python -m glyph.eval
 ```
 
 (Or open `GlyphLM_experiment.ipynb` locally or in Google Colab.) Chat with the
-trained shorthand model: `python -m glyph.chat`.
+trained shorthand model: `python -m glyph.chat_glyph`.
 
 ## 5. Results
 
@@ -170,7 +170,7 @@ shorthand compression itself. Iteration 2's regression and iteration 3's recover
 are both consistent with the "fixed vocab-budget artifact" framing in §2, not
 with shorthand substitution being structurally unworkable.
 
-**Chat example** (`python -m glyph.chat`, current `model_glyph`):
+**Chat example** (`python -m glyph.chat_glyph`, current `model_glyph`):
 ```
 you> hi
 glyph> hi S AEU EU TPOT , . C U . WE . E T . C : PWU R E : PHO ly ' PHEU HRAEUF , -T S PHEU TPHOEBL SR P-R T E ' s , R E E ' s : L E G I I s . -T , U , . TPOT s y US ;
