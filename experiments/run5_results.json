@@ -1,0 +1,36 @@
+{
+  "raw": {
+    "final_train_loss": 2.2467758655548096,
+    "train_time_seconds": 466.2181420326233,
+    "perplexity": 111.22234687283466,
+    "bits_per_char": 2.1375774672361976,
+    "tokens_per_second": 45.07552289566353,
+    "chars_per_second": 131.16977162638088,
+    "e2e_chars_per_second": 131.16977162638088,
+    "avg_tokens_per_line": 18.48121761658031,
+    "compression_ratio": 0.3145319222681228,
+    "next_word_accuracy": 0.13,
+    "completions": [
+      "R O M E O : But sof t , what light from you .\u201d I am much , but my dear S a me , I think s to you , and a great , you can see you . So I \u2019 re a de ta , for I know , I \u2019 m n \u2019 t be the night .\u201d I said , \u201c That \u2019 s a st",
+      "R O M E O : But sof t , what light , with me ; and me ant and com fort , and I feel so un happy , if I come , to you , and I should make the time . There was now , but I may be here , for I would have seen me . If I must not go , he will I am .",
+      "R O M E O : But sof t , what light ed to to s ister , so much , and the only , which is a re le gra v in the great p ray . Then we must have no te in an ent ity , you must to do you like the first time .\u201d I saw that it was too , and we \u2019 re a good"
+    ]
+  },
+  "glyph": {
+    "final_train_loss": 2.2485203742980957,
+    "train_time_seconds": 288.75397396087646,
+    "perplexity": 113.83518392700081,
+    "bits_per_char": 2.217889338839105,
+    "tokens_per_second": 46.20284531177004,
+    "chars_per_second": 148.77316190389953,
+    "e2e_chars_per_second": 162.90427626390277,
+    "avg_tokens_per_line": 18.366796200345423,
+    "compression_ratio": 0.32500649439953544,
+    "next_word_accuracy": 0.0,
+    "completions": [
+      "are to M he to : but soft , what light , L e e ! with he m , too , we had lost the same time for a little m ill ; but it is all , after this more as he would have been to be a little time , or with her . N ol i a he is for your dear - L ion _ , though",
+      "are to M he to : but soft , what light ed to see him at his d augh ter d own . B art ter is un d ge , B ro st at , C li ke , C ap z in , is e al to A st ok , the s ank s of is e al in it op s of these more than d ared",
+      "are to M he to : but soft , what light , you are an e an !\u201d \u201c what the about re ally is . is we \u2019 s so far to see them , are the it on M . _ II is e ward , is a man , and she was a is not to do . the about to are . we can \u2019 t to"
+    ]
+  }
+}

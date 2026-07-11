@@ -13,7 +13,7 @@ from transformers import GPT2Config, GPT2LMHeadModel, LlamaConfig, LlamaForCausa
 BLOCK_SIZE = 256
 BATCH_SIZE = 16  # reduced for gradient accumulation
 GRAD_ACCUM_STEPS = 2  # effective batch = 32
-EPOCHS = 12
+EPOCHS = 10
 LR = 5e-4
 WARMUP_STEPS = 100
 LOG_EVERY = 100

@@ -11,16 +11,17 @@ from tokenizers.trainers import BpeTrainer
 
 from glyph.encoder import get_special_tokens
 
-# GLYPH NOTE: increased from 2048 to 4096 to reduce BPE vocab starvation on larger corpus
-VOCAB_SIZE = 4096
+# VOCAB_SIZE: raw uses 2048, glyph uses 2048 + len(shorthand_tokens) to give equal BPE merge budget
+VOCAB_SIZE_RAW = 2048
+VOCAB_SIZE_GLYPH = 2228  # 2048 base + 180 shorthand chords
 BASE_SPECIAL_TOKENS = ["<pad>", "<bos>", "<eos>", "<unk>"]
 
 
-def train_bpe(corpus_path: str, save_dir: str, special_tokens: list[str] = BASE_SPECIAL_TOKENS) -> Tokenizer:
+def train_bpe(corpus_path: str, save_dir: str, vocab_size: int, special_tokens: list[str] = BASE_SPECIAL_TOKENS) -> Tokenizer:
     tokenizer = Tokenizer(BPE(unk_token="<unk>"))
     tokenizer.pre_tokenizer = Whitespace()
     trainer = BpeTrainer(
-        vocab_size=VOCAB_SIZE,
+        vocab_size=vocab_size,
         special_tokens=special_tokens,
         min_frequency=2,
     )
@@ -31,12 +32,13 @@ def train_bpe(corpus_path: str, save_dir: str, special_tokens: list[str] = BASE_
     return tokenizer
 
 
-def train_sentencepiece(corpus_path: str, save_dir: str, special_tokens: list[str] = BASE_SPECIAL_TOKENS) -> Tokenizer:
+def train_sentencepiece(corpus_path: str, save_dir: str, vocab_size: int, special_tokens: list[str] = BASE_SPECIAL_TOKENS) -> Tokenizer:
     """Train SentencePiece Unigram tokenizer and convert to tokenizers.Tokenizer format.
 
     Args:
         corpus_path: Path to training corpus text file
         save_dir: Directory to save tokenizer.json
+        vocab_size: Target vocabulary size
         special_tokens: List of special tokens (BASE_SPECIAL_TOKENS + shorthand chords)
 
     Returns:
@@ -59,7 +61,7 @@ def train_sentencepiece(corpus_path: str, save_dir: str, special_tokens: list[st
             input=corpus_path,
             model_prefix=model_prefix,
             model_type="unigram",
-            vocab_size=VOCAB_SIZE,
+            vocab_size=vocab_size,
             character_coverage=1.0,
             unk_id=3,
             pad_id=0,
@@ -118,16 +120,14 @@ if __name__ == "__main__":
     train_fn = train_bpe if args.type == "bpe" else train_sentencepiece
     tokenizer_type = "bpe" if args.type == "bpe" else "unigram"
 
-    raw_tok = train_fn("data/raw/train.txt", f"tokenizers/raw_{tokenizer_type}")
-    # GLYPH NOTE: registering glyph symbols as trainer special_tokens makes them
-    # guaranteed atomic vocab entries — the tokenizer's added-vocabulary matching
-    # intercepts them before pre-tokenization/merges run, so they no longer have to
-    # *earn* a slot through frequency-based merges, where they previously lost out
-    # to common English morphemes (see the worse compression ratio in README.md's
-    # first-run results).
+    raw_tok = train_fn("data/raw/train.txt", f"tokenizers/raw_{tokenizer_type}", vocab_size=VOCAB_SIZE_RAW)
+    # GLYPH NOTE: glyph gets VOCAB_SIZE_RAW + len(shorthand_tokens) to give equal BPE merge budget.
+    # Registering glyph symbols as trainer special_tokens makes them guaranteed atomic vocab entries
+    # — the tokenizer's added-vocabulary matching intercepts them before pre-tokenization/merges run.
     glyph_tok = train_fn(
         "data/glyph/train.txt",
         f"tokenizers/glyph_{tokenizer_type}",
+        vocab_size=VOCAB_SIZE_GLYPH,
         special_tokens=BASE_SPECIAL_TOKENS + get_special_tokens(),
     )
 
