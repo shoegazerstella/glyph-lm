@@ -8,6 +8,7 @@ import time
 import torch
 from transformers import AutoModelForCausalLM, PreTrainedTokenizerFast
 
+from glyph.downstream import next_word_accuracy
 from glyph.encoder import decode, encode
 from glyph.train import BLOCK_SIZE, get_device
 
@@ -113,6 +114,8 @@ def main() -> None:
             train_metrics = {"final_loss": None, "train_time_seconds": None}
 
         perplexity, bits_per_char = compute_perplexity(model, tok, val_text, device)
+        is_glyph = (label == "glyph")
+        nw_accuracy = next_word_accuracy(model, tok, val_text, is_glyph=is_glyph, n_samples=100, context_len=32)
         tokens_per_sec, chars_per_sec, _ = inference_speed(model, tok, prompt, device)
 
         # End-to-end timing: include steno encode/decode overhead for glyph
@@ -142,6 +145,7 @@ def main() -> None:
             "e2e_chars_per_second": e2e_chars_per_sec,
             "avg_tokens_per_line": _avg_tokens_per_line(tok, val_text),
             "compression_ratio": len(tok.encode(val_text)) / len(val_text),
+            "next_word_accuracy": nw_accuracy,
             "completions": completions,
         }
 
@@ -160,6 +164,7 @@ def main() -> None:
     print(_row("E2E chars/sec", "e2e_chars_per_second", "{:>15.2f}"))
     print(_row("Avg tokens/line (val)", "avg_tokens_per_line", "{:>15.2f}"))
     print(_row("Compression ratio (val)", "compression_ratio", "{:>15.4f}"))
+    print(_row("Next-word accuracy", "next_word_accuracy", "{:>15.3f}"))
 
     for label, _, _ in MODELS:
         print(f"\n--- {label} sample completions ---")
