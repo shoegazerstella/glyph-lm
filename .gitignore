@@ -8,6 +8,9 @@ models/model_glyph/*
 docs/*
 !docs/index.html
 !docs/.nojekyll
+!docs/log.md
+!docs/prd.md
+!docs/specs/
 !data/raw/.gitkeep
 !data/glyph/.gitkeep
 !tokenizers/raw_bpe/.gitkeep
