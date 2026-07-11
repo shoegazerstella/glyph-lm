@@ -82,6 +82,20 @@ python -m glyph.eval
 (Or open `GlyphLM_experiment.ipynb` locally or in Google Colab.) Chat with the
 trained shorthand model: `python -m glyph.chat_glyph`.
 
+**Training with SentencePiece Unigram tokenizer (improved compression):**
+```bash
+# Use --type unigram for SentencePiece Unigram (better compression at fixed vocab)
+python -m glyph.tokenizer --type unigram
+python -m glyph.train
+python -m glyph.eval
+```
+
+**Evaluation includes:**
+- Perplexity and bits-per-char on validation set
+- Next-word accuracy downstream task (100 samples, 32-word context)
+- Inference speed (tokens/sec, chars/sec, e2e chars/sec)
+- Sample completions
+
 ## 5. Results
 
 Two experiments on different corpus sizes, both seed=42. Raw numbers in `results.json` (gitignored, regenerate with `python -m glyph.eval`). Two earlier, less-grounded encoder versions are recorded in [`docs/log.md`](docs/log.md) for comparison.
